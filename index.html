@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Para vos ❤️</title>
+
+<style>
+body {
+    margin: 0;
+    overflow: hidden;
+    background: black;
+    font-family: Arial;
+}
+
+#startBtn {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 3em;
+    background: none;
+    border: none;
+    color: red;
+}
+
+#mensaje {
+    position: absolute;
+    width: 100%;
+    text-align: center;
+    top: 45%;
+    color: white;
+    font-size: 2em;
+    opacity: 0;
+    transition: 2s;
+}
+</style>
+</head>
+
+<body>
+
+<button id="startBtn">❤️</button>
+<div id="mensaje">Te amo para siempre ❤️</div>
+<canvas id="canvas"></canvas>
+
+<audio id="boom" src="https://www.soundjay.com/explosion/explosion-01.mp3"></audio>
+
+<script>
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener("resize", resize);
+
+let particles = [];
+
+// forma corazón
+function heartShape(t) {
+    let x = 16 * Math.pow(Math.sin(t), 3);
+    let y = 13 * Math.cos(t) - 5*Math.cos(2*t) - 2*Math.cos(3*t) - Math.cos(4*t);
+    return {x, y};
+}
+
+// explosión
+function explosion(x, y) {
+    document.getElementById("boom").currentTime = 0;
+    document.getElementById("boom").play();
+
+    for (let i = 0; i < 60; i++) {
+        let angle = Math.random() * Math.PI * 2;
+        let speed = Math.random() * 4 + 2;
+
+        particles.push({
+            x, y,
+            dx: Math.cos(angle) * speed,
+            dy: Math.sin(angle) * speed,
+            life: 80,
+            color: Math.random()*360
+        });
+    }
+}
+
+// cohete sincronizado
+function rocket(x, targetY, totalTime) {
+    let startY = canvas.height;
+    let startTime = Date.now();
+
+    function animateRocket() {
+        let elapsed = Date.now() - startTime;
+        let progress = elapsed / totalTime;
+
+        if (progress >= 1) {
+            explosion(x, targetY);
+            return;
+        }
+
+        let y = startY + (targetY - startY) * progress;
+
+        ctx.fillStyle = "white";
+        ctx.fillRect(x, y, 2, 10);
+
+        requestAnimationFrame(animateRocket);
+    }
+
+    animateRocket();
+}
+
+// crear corazón sincronizado
+function createHeartFireworks() {
+    let scale = 12;
+    let centerX = canvas.width / 2;
+    let centerY = canvas.height / 2;
+
+    let totalTime = 1500; // todos llegan en este tiempo
+
+    for (let t = 0; t < Math.PI * 2; t += 0.15) {
+        let pos = heartShape(t);
+
+        let x = centerX + pos.x * scale;
+        let y = centerY - pos.y * scale;
+
+        rocket(x, y, totalTime);
+    }
+}
+
+// partículas
+function draw() {
+    ctx.fillStyle = "rgba(0,0,0,0.2)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    for (let i = particles.length - 1; i >= 0; i--) {
+        let p = particles[i];
+
+        p.x += p.dx;
+        p.y += p.dy;
+        p.dy += 0.03;
+        p.life--;
+
+        ctx.fillStyle = "hsl(" + p.color + ",100%,60%)";
+        ctx.fillRect(p.x, p.y, 3, 3);
+
+        if (p.life <= 0) particles.splice(i, 1);
+    }
+
+    requestAnimationFrame(draw);
+}
+draw();
+
+// latido
+function heartbeat() {
+    let msg = document.getElementById("mensaje");
+    let scale = 1;
+
+    setInterval(() => {
+        scale = scale === 1 ? 1.1 : 1;
+        msg.style.transform = "scale(" + scale + ")";
+    }, 500);
+}
+
+// inicio
+document.getElementById("startBtn").onclick = () => {
+    document.getElementById("startBtn").style.display = "none";
+
+    createHeartFireworks();
+
+    setTimeout(() => {
+        let msg = document.getElementById("mensaje");
+        msg.style.opacity = 1;
+        heartbeat();
+    }, 2500);
+};
+</script>
+
+</body>
+</html>
